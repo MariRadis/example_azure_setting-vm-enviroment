@@ -1,72 +1,56 @@
-#Responsibilities:
-#Create GCP project
-#
-#Link to billing
-#
-#Enable APIs
-#
-# terraform deployment service account to be used in terraform deployment
 
 
-import {
-  id = var.project_id
-  to = google_project.project
+# Resource Group
+resource "azurerm_resource_group" "main" {
+  name     = var.resource_group_name
+  location = var.location
 }
 
-resource "google_project" "project" {
-  name       = var.project_name
-  project_id = var.project_id
-  org_id     = var.org_id
-  billing_account = var.billing_account_id
+# Terraform Deployment Identity (Service Principal)
+resource "azuread_application" "terraform" {
+  display_name = "terraform-app"
 }
 
-resource "google_project_service" "enabled_apis" {
-  for_each = toset([
-    "compute.googleapis.com",
-    "iam.googleapis.com",
-    "networkmanagement.googleapis.com"
-  ])
-
-  project            = google_project.project.project_id
-  service            = each.key
-  disable_on_destroy = false
+resource "azuread_service_principal" "terraform" {
+  application_id = azuread_application.terraform.application_id
 }
 
-resource "google_service_account" "terraform" {
-  account_id   = "terraform"
-  display_name = "Terraform Service Account"
-  project      = google_project.project.project_id
+resource "azuread_service_principal_password" "terraform" {
+  service_principal_id = azuread_service_principal.terraform.id
+  value                = var.sp_password
+  end_date             = "2099-01-01T00:00:00Z"
 }
 
-resource "google_project_iam_member" "terraform_sa_roles" {
-  for_each = toset([
-    "roles/editor",
-    "roles/compute.admin",
-    "roles/compute.networkAdmin",
-    "roles/monitoring.viewer",
-    "roles/iam.serviceAccountUser",
-    "roles/logging.logWriter",
-    "roles/storage.admin"
-    # "roles/resourcemanager.projectCreator" becasue I do not have org I do not have org admin
-  ])
-
-
-
-  project = google_project.project.project_id
-  role    = each.key
-  member  = "serviceAccount:${google_service_account.terraform.email}"
+# Assign roles to the Service Principal
+resource "azurerm_role_assignment" "terraform_contributor" {
+  scope                = azurerm_resource_group.main.id
+  role_definition_name = "Contributor"
+  principal_id         = azuread_service_principal.terraform.id
 }
 
-resource "google_storage_bucket" "terraform_state" {
-  name     = "tf-project-states"
-  project  = var.project_id
-  location = "EUROPE-WEST1"
-  force_destroy = true
+# Storage account for Terraform state
+resource "azurerm_storage_account" "tfstate" {
+  name                     = "tftfstate${random_string.suffix.result}"
+  resource_group_name      = azurerm_resource_group.main.name
+  location                 = azurerm_resource_group.main.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
 
-  versioning {
-    enabled = true
+  allow_blob_public_access = false
+
+  lifecycle {
+    prevent_destroy = false
   }
-
-  uniform_bucket_level_access = true
 }
 
+resource "azurerm_storage_container" "tfstate" {
+  name                  = "tfstate"
+  storage_account_name  = azurerm_storage_account.tfstate.name
+  container_access_type = "private"
+}
+
+resource "random_string" "suffix" {
+  length  = 6
+  upper   = false
+  special = false
+}
