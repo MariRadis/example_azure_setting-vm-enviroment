@@ -1,0 +1,119 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+.history/
+.code-workspace
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfplan
+crash.log
+.terraform/
+.terraform.lock.hcl
+
+# Terragrunt
+*.hcl.json
+.terragrunt-cache/
+*.terragrunt-debug.json
+
+# Azure
+.azure/
+*.azureprofile
+*.azurepubkeys
+
+# Bash
+*.log
+*.bak
+*.tmp
+*.swp
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
+*.env
+.env/
+.env.*
+.venv/
+venv/
+.Python
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+.pnpm-debug.log
+.eslintcache
+.next/
+dist/
+coverage/
+
+# Docker
+**/Dockerfile~
+**/docker-compose.yml~
+.dockerignore
+docker-compose.override.yml
+docker-compose.*.yml
+*.dockerfile
+*.tar
+*.tar.gz
+*.img
+*.container
+*.pid
+tmp-docker/
+**/volumes/
+**/volume-data/
+**/docker-volumes/
+
+# Docker Volumes (if mounted to a project dir)
+volume/
+volumes/
+docker-volumes/
+data/
+db-data/
+pgdata/
+mysql/
+mongo/
+redis/
+
+# GitHub Actions
+.github/workflows/*.bak
+.github/workflows/*.log
+.github/workflows/*.tmp
+.github/workflows/*.old
+.github/actions/**/dist/
+.github/actions/**/node_modules/
+
+# Environment File Convention
+.env              # Do ignore actual env files
+.env.*            # e.g., .env.local, .env.production
+!.env.example     # But don't ignore the example template
+
+# Optional: OS or IDE lock files
+*.lock
+*.pid
