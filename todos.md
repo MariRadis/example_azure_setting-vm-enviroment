@@ -4,3 +4,6 @@ terragrant
 azure
 
 transalte task.md into work document
+
+
+azure pricing billing account setup
