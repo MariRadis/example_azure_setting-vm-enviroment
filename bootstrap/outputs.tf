@@ -13,6 +13,7 @@ output "storage_account_id" {
   value       = azurerm_storage_account.tfstate.id
 }
 
+# created manually see not in module bootstrap/modules/wif_github_oidc
 # output "wif_client_id" {
 #   description = "Client ID of the Azure AD application used by GitHub Actions (OIDC)"
 #   value       = module.wif_oidc.client_id
@@ -23,11 +24,3 @@ output "storage_account_id" {
 #   value       = module.wif_oidc.tenant_id
 # }
 
-
-#Take outputs:
-#
-#wif_client_id
-#
-#wif_tenant_id
-#
-#Use them in your GitHub repo secrets.
