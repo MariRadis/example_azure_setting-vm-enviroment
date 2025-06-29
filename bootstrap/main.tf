@@ -84,3 +84,9 @@ resource "azurerm_storage_container" "tfstate" {
 #   role_scope           = azurerm_storage_account.tfstate.id
 #   role_definition_name = "Storage Blob Data Contributor"
 # }
+
+resource "azurerm_role_assignment" "github_oidc_role" {
+  principal_id         = var.principal_id # from step 3
+  role_definition_name = "Contributor"
+  scope                = var.scope # e.g., /subscriptions/<sub-id> or /resourceGroups/<rg-name>
+}

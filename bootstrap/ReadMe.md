@@ -1,8 +1,8 @@
+After you created the app registration, Azure automatically creates a service principal for it.
 
-this added app
-az rest --method GET --url https://graph.microsoft.com/v1.0/applications
+To find the object ID (needed for role assignment):
 
-terraform-sp
-
-
-49392531-7e2a-4e41-afcb-4a49497058a2
+bash
+Copy
+Edit
+az ad sp list --display-name github-oidc-test --query '[0].id' -o tsv
