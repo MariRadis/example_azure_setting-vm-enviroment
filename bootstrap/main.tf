@@ -1,74 +1,80 @@
 #Responsibilities:
+# this code is what would go to bootstrap but also what would go to customer project initialization module ( resason is that this is out of scope for this task)
+
 #Create subscription that in this case is create project for customer and subscription that would have all state buckets
-#Normly in bootstrap would no have subscript for given customer, and enable api for this customer
-#
-#Link to billing already done in this example by creating subscription per customer
 #
 #Enable APIs
+# This bootstrap "code" would create admin users , but this is not needed for this task
 #
-# locally I use my user, by would it be better to do impersonation of sa for this customer project (one sa per env:prd,test... )
+# locally I use my user, but would it be better to do impersonation of sa for this customer project (one sa per env:prd,test... )
 # I need also one workload federation for github ci/cd
+#
+# Bootstrap is for init staff and also has states so that is easy to remove state on resource deletion
+#🛠️ What Should Bootstrap Create?
+#Here’s what you typically want in your Terraform bootstrap phase:
+#
+#1. 🎯 Resource Group (for state)
+#2. 📦 Storage Account + Container (for Terraform state)
+#3. 🔐 Federated Identity Setup:
+#Azure AD App Registration
+#
+#Federated Credential for GitHub, GitLab, or GCP OIDC
+#
+#Azure Role Assignment (e.g. Storage Blob Data Contributor)
+#🧠 Why Put WIF Setup in the Bootstrap Project?
+#Because WIF must exist before GitHub Actions can run any Terraform with Azure authentication.
+#
+#So:
+#
+#✔️ Bootstrap project = runs locally to provision:
+#
+#State storage
+#
+#AAD App + SP
+#
+#Federated credential
+#
+#Role assignment to storage
+#
+#🧑 You run it manually once per subscription/customer.
+#
+#Then:
+#
+#🤖 GitHub Actions can run later Terraform securely using the OIDC identity you bootstrapped.
 
 
-import {
-  id = var.project_id
-  to = google_project.project
+locals {
+  resource_group_name   = "rg-tfstate-${substr(var.subscription_id, 0, 8)}"
+  storage_account_name  = lower("tfstate${replace(var.subscription_id, "-", "")}")
+  container_name        = "tfstate"
 }
 
-resource "google_project" "project" {
-  name       = var.project_name
-  project_id = var.project_id
-  org_id     = var.org_id
-  billing_account = var.billing_account_id
+resource "azurerm_resource_group" "tfstate" {
+  name     = local.resource_group_name
+  location = var.location
 }
 
-resource "google_project_service" "enabled_apis" {
-  for_each = toset([
-    "compute.googleapis.com",
-    "iam.googleapis.com",
-    "networkmanagement.googleapis.com"
-  ])
-
-  project            = google_project.project.project_id
-  service            = each.key
-  disable_on_destroy = false
+resource "azurerm_storage_account" "tfstate" {
+  name                     = local.storage_account_name
+  resource_group_name      = azurerm_resource_group.tfstate.name
+  location                 = azurerm_resource_group.tfstate.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  min_tls_version          = "TLS1_2"
 }
 
-resource "google_service_account" "terraform" {
-  account_id   = "terraform"
-  display_name = "Terraform Service Account"
-  project      = google_project.project.project_id
+resource "azurerm_storage_container" "tfstate" {
+  name                  = local.container_name
+  storage_account_id  = azurerm_storage_account.tfstate.name
+  container_access_type = "private"
 }
 
-resource "google_project_iam_member" "terraform_sa_roles" {
-  for_each = toset([
-    "roles/editor",
-    "roles/compute.admin",
-    "roles/compute.networkAdmin",
-    "roles/monitoring.viewer",
-    "roles/iam.serviceAccountUser",
-    "roles/logging.logWriter",
-    "roles/storage.admin"
-    # "roles/resourcemanager.projectCreator" becasue I do not have org I do not have org admin
-  ])
-
-
-
-  project = google_project.project.project_id
-  role    = each.key
-  member  = "serviceAccount:${google_service_account.terraform.email}"
+module "wif_oidc" {
+  source               = "../modules/wif_github_oidc"
+  app_name             = "tf-ci"
+  github_org           = var.github_org
+  github_repo          = var.github_repo
+  github_branch        = var.github_branch
+  role_scope           = azurerm_storage_account.tfstate.id
+  role_definition_name = "Storage Blob Data Contributor"
 }
-
-resource "google_storage_bucket" "terraform_state" {
-  name     = "tf-project-states"
-  project  = var.project_id
-  location = "EUROPE-WEST1"
-  force_destroy = true
-
-  versioning {
-    enabled = true
-  }
-
-  uniform_bucket_level_access = true
-}
-

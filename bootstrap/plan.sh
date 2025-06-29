@@ -2,6 +2,8 @@
 
 # Log in to Azure (interactive)
 az login
+az account set --subscription "<your-subscription-id>"
+
 
 # todo
 # Set the subscription (optional, if multiple subscriptions)
