@@ -42,11 +42,15 @@
 #
 #🤖 GitHub Actions can run later Terraform securely using the OIDC identity you bootstrapped.
 
-
+resource "random_string" "storage_suffix" {
+  length  = 4
+  upper   = false
+  special = false
+}
 locals {
   resource_group_name   = "rg-tfstate-${substr(var.subscription_id, 0, 8)}"
-  short_sub_id           = substr(replace(var.subscription_id, "-", ""), 0, 18) # 18 + 6 = 24 total
-  storage_account_name   = lower("tfstate${local.short_sub_id}")
+  short_sub_id         = substr(replace(var.subscription_id, "-", ""), 0, 14)
+  storage_account_name = lower("tf${local.short_sub_id}${random_string.storage_suffix.result}")
   container_name        = "tfstate"
 }
 
