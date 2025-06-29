@@ -73,6 +73,8 @@ resource "azurerm_storage_container" "tfstate" {
   storage_account_id  = azurerm_storage_account.tfstate.id
   container_access_type = "private"
 }
+
+# I do not have enough privates on my testing account to create this resources from my laptop
 # module "wif_oidc" {
 #   source               = "./modules/wif_github_oidc"
 #   app_name             = "tf-ci"
