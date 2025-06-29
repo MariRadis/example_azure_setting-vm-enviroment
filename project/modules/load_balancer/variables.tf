@@ -1,1 +1,4 @@
-// variables.tf for azure_migration/modules/load_balancer
+
+variable "resource_group_name" {}
+variable "location" {}
+variable "lb_name" {}
