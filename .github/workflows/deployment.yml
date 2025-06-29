@@ -26,3 +26,4 @@ jobs:
 
       - name: Show current Azure account
         run: az account show
+
