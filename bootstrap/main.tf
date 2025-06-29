@@ -45,7 +45,8 @@
 
 locals {
   resource_group_name   = "rg-tfstate-${substr(var.subscription_id, 0, 8)}"
-  storage_account_name  = lower("tfstate${replace(var.subscription_id, "-", "")}")
+  short_sub_id           = substr(replace(var.subscription_id, "-", ""), 0, 18) # 18 + 6 = 24 total
+  storage_account_name   = lower("tfstate${local.short_sub_id}")
   container_name        = "tfstate"
 }
 
