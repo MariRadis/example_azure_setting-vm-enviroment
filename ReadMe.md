@@ -1,4 +1,6 @@
 
+az login
+az account set --subscription "Your Subscription Name or ID"
 
 # GCP Web App with Load Balancer (Terraform)
 

@@ -1,15 +1,16 @@
 
 
+# in this case github that wants to authenticate with azure
 resource "azuread_application" "app" {
   display_name = var.app_name
 }
 
 resource "azuread_service_principal" "sp" {
-  application_id = azuread_application.app.application_id
+  client_id = azuread_application.app.client_id
 }
 
 resource "azuread_application_federated_identity_credential" "github_oidc" {
-  application_object_id = azuread_application.app.id
+  application_id = azuread_application.app.id
   display_name          = "github-oidc"
   description           = "OIDC trust for GitHub Actions"
   audiences             = ["api://AzureADTokenExchange"]

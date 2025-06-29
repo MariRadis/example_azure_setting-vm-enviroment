@@ -69,12 +69,12 @@ resource "azurerm_storage_container" "tfstate" {
   container_access_type = "private"
 }
 
-module "wif_oidc" {
-  source               = "../modules/wif_github_oidc"
-  app_name             = "tf-ci"
-  github_org           = var.github_org
-  github_repo          = var.github_repo
-  github_branch        = var.github_branch
-  role_scope           = azurerm_storage_account.tfstate.id
-  role_definition_name = "Storage Blob Data Contributor"
-}
+# module "wif_oidc" {
+#   source               = "./modules/wif_github_oidc"
+#   app_name             = "tf-ci"
+#   github_org           = var.github_org
+#   github_repo          = var.github_repo
+#   github_branch        = var.github_branch
+#   role_scope           = azurerm_storage_account.tfstate.id
+#   role_definition_name = "Storage Blob Data Contributor"
+# }
