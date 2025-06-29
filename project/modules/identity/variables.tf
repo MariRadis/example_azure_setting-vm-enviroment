@@ -1,0 +1,1 @@
+// variables.tf for azure_migration/modules/identity

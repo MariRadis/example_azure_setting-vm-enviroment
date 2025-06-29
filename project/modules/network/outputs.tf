@@ -1,0 +1,1 @@
+// outputs.tf for azure_migration/modules/network
