@@ -70,10 +70,9 @@ resource "azurerm_storage_account" "tfstate" {
 
 resource "azurerm_storage_container" "tfstate" {
   name                  = local.container_name
-  storage_account_id  = azurerm_storage_account.tfstate.name
+  storage_account_id  = azurerm_storage_account.tfstate.id
   container_access_type = "private"
 }
-
 # module "wif_oidc" {
 #   source               = "./modules/wif_github_oidc"
 #   app_name             = "tf-ci"

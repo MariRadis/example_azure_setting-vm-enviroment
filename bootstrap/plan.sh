@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Log in to Azure (interactive)
-az login
-az account set --subscription "<your-subscription-id>"
+# az login
 
 
 # todo
