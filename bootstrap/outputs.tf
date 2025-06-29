@@ -1,3 +1,13 @@
+#
+# output "project_id" {
+#   value = google_project.project.project_id
+# }
+#
+# output "terraform_sa_email" {
+#   value = google_service_account.terraform.email
+# }
+
+
 output "resource_group_name" {
   value = azurerm_resource_group.main.name
 }
