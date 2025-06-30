@@ -39,10 +39,5 @@ jobs:
             -backend-config="storage_account_name=${{ secrets.TF_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ secrets.TF_CONTAINER_NAME }}" \
             -backend-config="key=${{ secrets.TF_KEY }}"
-
-
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+          terraform plan -out=tfplan
+          terraform apply -auto-approve tfplan
