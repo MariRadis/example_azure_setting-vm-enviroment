@@ -11,8 +11,10 @@ permissions:
 
 jobs:
   deploy:
+    name: Deploy Infrastructure to Azure
     runs-on: ubuntu-latest
     environment: dev
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,3 +29,20 @@ jobs:
       - name: Show current Azure account
         run: az account show
 
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TF_RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ secrets.TF_CONTAINER_NAME }}" \
+            -backend-config="key=${{ secrets.TF_KEY }}"
+
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
