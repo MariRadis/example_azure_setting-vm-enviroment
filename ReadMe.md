@@ -1,157 +1,175 @@
+# Azure NGINX Web App with Load Balancer (Terraform)
 
-az login
-az account set --subscription "Your Subscription Name or ID"
-terraform init -backend-config="backend.config"
+This project deploys a simple NGINX-based web application on a **Virtual Machine Scale Set (VMSS)** behind a **Standard Azure Load Balancer**, using **Terraform** for full automation and reproducibility.
 
-# GCP Web App with Load Balancer (Terraform)
+---
 
-This project deploys a simple NGINX-based web application on Google Compute Engine (GCE) instances behind a **Global HTTP Load Balancer**, using **Terraform** for full automation.
+## Features
 
-## 🌟 Features
+* Linux VMSS running NGINX via startup script (`custom_data`)
+* Standard Load Balancer with:
 
-- GCE VMs running NGINX via startup script
-- Managed Instance Group (MIG) with auto-healing
-- Global HTTP Load Balancer with health checks
-- VPC network with NAT, subnet, and firewall rules
-- Modular and reusable Terraform structure
+   * Public IP
+   * Backend Address Pool
+   * Health Probe on port 80
+   * Load Balancer Rule for HTTP traffic
+   * Optional NAT rules for SSH
+* Secure, private VMs (no public IPs)
+* NAT-enabled outbound internet access
+* Modular and reusable Terraform code
 
-## ✅ Prerequisites
+---
 
-- A Google Cloud Platform (GCP) project
-- Authenticated with the [`gcloud`](https://cloud.google.com/sdk/docs/install) CLI
-- [Terraform](https://developer.hashicorp.com/terraform/downloads) v1.9 or newer installed
+## Prerequisites
 
-## 📦 Project Structure
+* An active Azure subscription
+* [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed and logged in:
+
+  ```bash
+  az login
+  az account set --subscription "Your Subscription Name or ID"
+  ```
+* [Terraform](https://developer.hashicorp.com/terraform/downloads) v1.9 or newer
+* Terraform backend configured (e.g., via `backend.config`)
+
+---
+
+## Project Structure
 
 ```text
 .
-├── main.tf
-├── variables.tf
-├── outputs.tf
+├── apply.sh                     # Deploys infrastructure
+├── destroy.sh                   # Destroys infrastructure
+├── backend.config               # Remote state backend config
+├── main.tf / variables.tf / outputs.tf
 ├── modules/
-│   ├── vpc/                # Creates VPC, subnet, firewall, NAT
-│   ├── compute/            # Creates instance template, MIG, health check
-│   └── load_balancer/      # Sets up backend service, URL map, proxy, forwarding rule
-├── apply.sh
-└── destroy.sh
+│   ├── vpc/                     # VNet, subnet, NAT, firewall rules
+│   ├── compute/                 # VMSS, startup script, identity
+│   └── load_balancer/          # Load Balancer, probe, rules, public IP
 ```
 
-## 🚀 Usage
+---
 
-1. **Initialize Terraform:**
+## Deployment
+
+### 1. Initialize Terraform
+
+```bash
+terraform init -backend-config="backend.config"
+```
+
+### 2. Deploy Infrastructure
+
+```bash
+./apply.sh
+```
+
+This provisions:
+
+* A virtual network and subnet
+* A Linux VMSS with NGINX
+* A Standard Load Balancer
+* Optional NAT rules for SSH access
+
+---
+
+## Access the Web App
+
+After deployment, get the public IP:
+
+```bash
+terraform output -raw http_url
+```
+
+Open it in your browser — you should see:
+
+```
+Hello from <instance-hostname>
+```
+
+This verifies:
+
+* Load balancer routing works
+* Health probe sees VM as healthy
+* NGINX is running on the VMSS
+
+---
+
+## SSH Access (via NAT rule)
+
+> VMSS instances do not have public IPs. SSH is enabled through a NAT rule on the Load Balancer.
+
+1. Get the load balancer IP and NAT frontend port:
 
    ```bash
-   terraform init
+   terraform output -raw http_url     # Public IP
+   # Check module or Azure Portal for NAT port (e.g., 50000)
    ```
 
-2. **Apply the infrastructure:**
+2. Connect:
 
    ```bash
-   ./apply.sh
+   ssh azureuser@<public-ip> -p <nat-port>
    ```
 
-   > This script runs `terraform plan` and `terraform apply` with dynamic IP-based firewall rules for SSH.
-
-3. **Access the web app:**
-
-   After apply completes, open your browser to:
+3. Inside the VM:
 
    ```bash
-   echo "$(terraform output -raw http_url)"
-   ```
-
-   You should see NGINX serving:
-   `Hello from <instance-hostname>`
-
-4. **Kill VM and wait to recreate**
-   1. We have 1 VM.
-      ```bash
-      gcloud compute instances list
-      # Replace <instance-name> and <zone> with values from:
-
-      gcloud compute instances delete web-nb7h  --zone=europe-west1-c --quiet
-      
-      ```
-   2. Shows :
-      1. mig recreating, vm auto heal https://console.cloud.google.com/compute/instanceGroups/list?hl=en&inv=1&invt=Ab06tQ&project=whitelama&supportedpurview=project,organizationId,folder
-      2. new VM appears https://console.cloud.google.com/compute/instances?hl=en&inv=1&invt=Ab06tQ&project=whitelama&supportedpurview=project,organizationId,folder
-      3. load balancer works
-      ```bash
-      echo "$(terraform output -raw http_url)"
-      ```
-
-
-
-5. **ssh and firewall** 
-      ```bash
-      gcloud compute instances list
-      gcloud compute ssh web-4g99 --tunnel-through-iap --project=whitelama --zone=europe-west1-c #--troubleshoot   --verbosity=debug
-
-      ```
-   Test inside the VM
-    ```bash
    curl localhost
    sudo systemctl status nginx
-   ping google.com # nat
-   exit
-   ```
-   test ports
-   ```bash
-   nc -zv 35.244.193.90 22         # SSH port  #  ["35.235.240.0/20"]  # IAP TCP tunneling range
-   nc -zv 35.244.193.90 80         # HTTP
-   nc -zv 35.244.193.90 443        # HTTPS
+   ping google.com   # Test NAT access
    ```
 
+---
 
-Manual Step Required
-https://console.cloud.google.com/security/iap?hl=en&inv=1&invt=Ab06tQ&orgonly=true&project=whitelama&supportedpurview=organizationId
+## Manual Testing
 
+### Port reachability:
 
-6. **Autoscaling**
-   HTTP Request Load
-   Get external IP of Load Balancer (or VM directly if public).
-
-Use Apache Benchmark (ab) or similar:
-
-```
-ab -n 10000 -c 20 http://35.244.193.90/
-
-Increase c gradually
-
-``` 
-Sends 10,000 requests with 100 concurrent clients.
-
-Watch the MIG:
-```
-gcloud compute instance-groups list
-gcloud compute instance-groups managed list-instances \
-<mig-name> --region=<region>
+```bash
+nc -zv <public-ip> 22   # SSH
+nc -zv <public-ip> 80   # HTTP
+nc -zv <public-ip> 443  # HTTPS (if applicable)
 ```
 
+## Simulate Failures (Auto-heal)
 
+Kill the VM instance in Azure Portal or CLI and watch it self-heal:
 
+```bash
+az vmss list-instances --resource-group <rg> --name <vmss-name>
+az vmss delete-instances --resource-group <rg> --name <vmss-name> --instance-ids <id>
+```
 
+Then access the web app again — a new instance should be recreated and available behind the load balancer.
 
-7. **Tear down the demo:**
+---
 
-   ```bash
-   ./destroy.sh
-   ```
+## 🦼️‍♂️ Tear Down
 
-## 🔐 Security
+```bash
+./destroy.sh
+```
 
-* SSH access is restricted to your public IP via `source_ranges`.
-* Health check and load balancer IPs are explicitly allowed via firewall rules.
-* No public IPs are assigned to VMs — traffic flows only through the load balancer.
+---
 
-## 🧠 Notes
+## Security
 
-* This uses [Google Global External HTTP Load Balancer](https://cloud.google.com/load-balancing/docs/https).
-* `nginx` is installed via a simple `startup_script`.
-* VM group is configured via a regional MIG for high availability.
-* All modules are fully decoupled and can be reused across other GCP projects.
+* No public IPs on VM instances
+* SSH access controlled via NAT rules on specific frontend ports
+* Inbound rules limited to HTTP (80) and SSH (22)
+* NAT gateway (optional) enables outbound internet securely
 
-## 📄 License
+---
+
+## Notes
+
+* NGINX is installed using `custom_data` at VMSS boot time
+* Backend address pool is connected via `load_balancer_backend_address_pool_ids` in the VMSS
+* All resources are created via separate modules and can be reused across environments
+
+---
+
+##License
 
 MIT License
-

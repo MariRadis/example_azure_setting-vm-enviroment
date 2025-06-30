@@ -7,13 +7,13 @@ output "vmss_name" {
 }
 
 output "identity_id" {
-  value = azurerm_user_assigned_identity.this.id
+  value = azurerm_user_assigned_identity.uai_vmss.id
 }
 
 output "identity_client_id" {
-  value = azurerm_user_assigned_identity.this.client_id
+  value = azurerm_user_assigned_identity.uai_vmss.client_id
 }
 
 output "identity_principal_id" {
-  value = azurerm_user_assigned_identity.this.principal_id
+  value = azurerm_user_assigned_identity.uai_vmss.principal_id
 }
