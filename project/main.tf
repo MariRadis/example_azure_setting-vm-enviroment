@@ -13,6 +13,14 @@ module "network" {
   subnet_name         = "webapp-subnet"
 }
 
+module "load_balancer" {
+  source              = "./modules/load_balancer"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  lb_name             = "webapp-lb"
+}
+
+
 module "vmss" {
   source              = "./modules/vmss"
   resource_group_name = azurerm_resource_group.main.name
@@ -22,6 +30,7 @@ module "vmss" {
   lb_backend_address_pool_id = module.load_balancer.backend_address_pool_id
   admin_username      = var.admin_username
   identity_name       = "webapp-vmss"
+  azurerm_lb_nat_rule_ssh_id = module.load_balancer.azurerm_lb_nat_rule_ssh_id
   ssh_public_key = var.ssh_public_key
   custom_data         = <<-EOT
 #!/bin/bash
@@ -54,10 +63,4 @@ resource "azurerm_role_assignment" "log_analytics" {
 }
 
 
-module "load_balancer" {
-  source              = "./modules/load_balancer"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = var.location
-  lb_name             = "webapp-lb"
-}
 

@@ -12,7 +12,6 @@
 
 
 
-# todo NSG like firewall
 
 resource "azurerm_virtual_network" "vnet" {
   name                = var.vnet_name

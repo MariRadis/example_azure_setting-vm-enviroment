@@ -61,3 +61,14 @@ resource "azurerm_lb_rule" "http" {
   backend_address_pool_ids = [azurerm_lb_backend_address_pool.bepool.id]
   probe_id                       = azurerm_lb_probe.http.id
 }
+
+resource "azurerm_lb_nat_rule" "ssh" {
+  name                           = "ssh-nat-rule"
+  resource_group_name            = var.resource_group_name
+  loadbalancer_id                = azurerm_lb.lb.id
+  protocol                       = "Tcp"
+  frontend_port                  = 5000         # NAT port used by the client
+  backend_port                   = 22            # Port on the VM
+  frontend_ip_configuration_name = "public-lb-ip"
+}
+

@@ -41,3 +41,6 @@ variable "ssh_public_key" {
 output "uai_principal_id" {
   value = azurerm_user_assigned_identity.uai_vmss.principal_id
 }
+variable "azurerm_lb_nat_rule_ssh_id" {
+  default = ""
+}

@@ -78,7 +78,7 @@ This provisions:
 After deployment, get the public IP:
 
 ```bash
-terraform output -raw http_url
+terraform output -raw public_ip
 ```
 
 Open it in your browser — you should see:
@@ -102,14 +102,15 @@ This verifies:
 1. Get the load balancer IP and NAT frontend port:
 
    ```bash
-   terraform output -raw http_url     # Public IP
-   # Check module or Azure Portal for NAT port (e.g., 50000)
+   terraform output -raw public_ip     # Public IP
    ```
 
 2. Connect:
 
    ```bash
-   ssh azureuser@<public-ip> -p <nat-port>
+   ssh azureuser@<public-ip> -p 5000
+   
+   ssh azureuser@52.166.57.138 -p 5000 
    ```
 
 3. Inside the VM:
