@@ -145,7 +145,7 @@ Then access the web app again — a new instance should be recreated and availab
 
 ---
 
-## 🦼️‍♂️ Tear Down
+## Tear Down
 
 ```bash
 ./destroy.sh
