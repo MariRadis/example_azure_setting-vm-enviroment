@@ -17,16 +17,6 @@ resource "azurerm_user_assigned_identity" "uai_vmss" {
   resource_group_name = var.resource_group_name
 }
 
-resource "azurerm_role_assignment" "uai_vss_roles" {
-  for_each = {
-    for idx, role in var.role_assignments :
-    idx => role
-  }
-
-  scope                = each.value.scope
-  role_definition_name = each.value.role_definition_name
-  principal_id         = azurerm_user_assigned_identity.uai_vmss.principal_id
-}
 
 # vm scale set
 resource "azurerm_linux_virtual_machine_scale_set" "vmss" {

@@ -27,13 +27,6 @@ variable "identity_name" {
   type = string
 }
 
-variable "role_assignments" {
-  description = "List of role assignments for the identity"
-  type = list(object({
-    role_definition_name = string
-    scope                = string
-  }))
-}
 
 variable "lb_backend_address_pool_id" {
   type        = string
@@ -43,4 +36,8 @@ variable "lb_backend_address_pool_id" {
 variable "ssh_public_key" {
   description = "SSH public key for the VMSS admin user"
   type        = string
+}
+
+output "uai_principal_id" {
+  value = azurerm_user_assigned_identity.uai_vmss.principal_id
 }

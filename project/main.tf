@@ -32,21 +32,27 @@ systemctl start nginx
 echo "Hello from $(hostname)" > /var/www/html/index.html
 EOT
 
-  role_assignments = [
-    {
-      role_definition_name = "Reader"
-      scope                = azurerm_resource_group.main.id
-    },
-    {
-      role_definition_name = "Monitoring Metrics Publisher"
-      scope                = azurerm_resource_group.main.id
-    },
-    {
-      role_definition_name = "Log Analytics Contributor"
-      scope                = azurerm_resource_group.main.id
-    }
-  ]
 }
+
+
+resource "azurerm_role_assignment" "reader" {
+  scope                = azurerm_resource_group.main.name
+  role_definition_name = "Reader"
+  principal_id         = module.vmss.uai_principal_id
+}
+
+resource "azurerm_role_assignment" "monitoring" {
+  scope                = azurerm_resource_group.main.name
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = module.vmss.uai_principal_id
+}
+
+resource "azurerm_role_assignment" "log_analytics" {
+  scope                = azurerm_resource_group.main.name
+  role_definition_name = "Log Analytics Contributor"
+  principal_id         = module.vmss.uai_principal_id
+}
+
 
 module "load_balancer" {
   source              = "./modules/load_balancer"
