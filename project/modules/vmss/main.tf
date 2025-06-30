@@ -58,7 +58,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
       name                                   = "internal"
       subnet_id                              = var.subnet_id
       primary                                = true
-      load_balancer_backend_address_pool_ids = []
+      load_balancer_backend_address_pool_ids = [var.lb_backend_address_pool_id]
     }
   }
 

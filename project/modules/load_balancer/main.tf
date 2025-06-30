@@ -32,15 +32,17 @@ resource "azurerm_lb" "lb" {
   }
 }
 
+# define which virtual machines (VMs) or network interfaces are considered backend targets for load balancing.
 resource "azurerm_lb_backend_address_pool" "bepool" {
   name                = "backend-pool"
-  resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.lb.id
 }
 
+#Helps the load balancer decide whether a backend VM is healthy or unhealthy
+#
+#Prevents routing traffic to unhealthy instances
 resource "azurerm_lb_probe" "http" {
   name                = "http-probe"
-  resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.lb.id
   protocol            = "Http"
   port                = 80
@@ -51,12 +53,11 @@ resource "azurerm_lb_probe" "http" {
 
 resource "azurerm_lb_rule" "http" {
   name                           = "http-rule"
-  resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.lb.id
   protocol                       = "Tcp"
   frontend_port                  = 80
   backend_port                   = 80
   frontend_ip_configuration_name = "public-lb-ip"
-  backend_address_pool_id        = azurerm_lb_backend_address_pool.bepool.id
+  backend_address_pool_ids = [azurerm_lb_backend_address_pool.bepool.id]
   probe_id                       = azurerm_lb_probe.http.id
 }

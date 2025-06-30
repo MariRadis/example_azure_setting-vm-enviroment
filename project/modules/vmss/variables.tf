@@ -34,3 +34,8 @@ variable "role_assignments" {
     scope                = string
   }))
 }
+
+variable "lb_backend_address_pool_id" {
+  type        = string
+  description = "ID of the Load Balancer backend address pool"
+}

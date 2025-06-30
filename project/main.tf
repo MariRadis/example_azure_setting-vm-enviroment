@@ -19,6 +19,7 @@ module "vmss" {
   location            = var.location
   vmss_name           = "webapp-vmss"
   subnet_id           = module.network.subnet_id
+  lb_backend_address_pool_id = module.load_balancer.backend_address_pool_id
   admin_username      = var.admin_username
   identity_name       = "webapp-vmss"
   custom_data         = <<-EOT
