@@ -1,5 +1,3 @@
-
-
 resource "azurerm_resource_group" "main" {
   name     = "webapp-rg"
   location = var.location
