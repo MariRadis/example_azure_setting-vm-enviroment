@@ -36,19 +36,19 @@ EOT
 
 
 resource "azurerm_role_assignment" "reader" {
-  scope                = azurerm_resource_group.main.name
+  scope                = azurerm_resource_group.main.id
   role_definition_name = "Reader"
   principal_id         = module.vmss.uai_principal_id
 }
 
 resource "azurerm_role_assignment" "monitoring" {
-  scope                = azurerm_resource_group.main.name
+  scope                = azurerm_resource_group.main.id
   role_definition_name = "Monitoring Metrics Publisher"
   principal_id         = module.vmss.uai_principal_id
 }
 
 resource "azurerm_role_assignment" "log_analytics" {
-  scope                = azurerm_resource_group.main.name
+  scope                = azurerm_resource_group.main.id
   role_definition_name = "Log Analytics Contributor"
   principal_id         = module.vmss.uai_principal_id
 }
