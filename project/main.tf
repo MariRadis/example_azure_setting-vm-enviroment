@@ -1,64 +1,97 @@
-resource "azurerm_resource_group" "main" {
-  name     = "webapp-rg"
+resource "azurerm_resource_group" "rg" {
+  name     = "${var.prefix}-rg"
   location = var.location
 }
 
-module "network" {
-  source              = "./modules/network"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = var.location
-  vnet_name           = "webapp-vnet"
-  subnet_name         = "webapp-subnet"
+resource "azurerm_virtual_network" "vnet" {
+  name                = "${var.prefix}-vnet"
+  address_space       = var.address_space
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
 }
 
-module "load_balancer" {
-  source              = "./modules/load_balancer"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = var.location
-  lb_name             = "webapp-lb"
+resource "azurerm_subnet" "subnet" {
+  name                 = "${var.prefix}-subnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = var.subnet_prefix
 }
 
+resource "azurerm_network_security_group" "nsg" {
+  name                = "${var.prefix}-nsg"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
 
-module "vmss" {
-  source              = "./modules/vmss"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = var.location
-  vmss_name           = "webapp-vmss"
-  subnet_id           = module.network.subnet_id
-  lb_backend_address_pool_id = module.load_balancer.backend_address_pool_id
-  admin_username      = var.admin_username
-  identity_name       = "webapp-vmss"
-  azurerm_lb_nat_rule_ssh_id = module.load_balancer.azurerm_lb_nat_rule_ssh_id
-  ssh_public_key = var.ssh_public_key
-  custom_data         = <<-EOT
-#!/bin/bash
-apt-get update
-apt-get install -y nginx
-systemctl enable nginx
-systemctl start nginx
-echo "Hello from $(hostname)" > /var/www/html/index.html
-EOT
-
+  security_rule {
+    name                       = "allow_http"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
 
-
-resource "azurerm_role_assignment" "reader" {
-  scope                = azurerm_resource_group.main.id
-  role_definition_name = "Reader"
-  principal_id         = module.vmss.uai_principal_id
+resource "azurerm_public_ip" "public_ip" {
+  name                = "${var.prefix}-public-ip"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Basic"
 }
 
-resource "azurerm_role_assignment" "monitoring" {
-  scope                = azurerm_resource_group.main.id
-  role_definition_name = "Monitoring Metrics Publisher"
-  principal_id         = module.vmss.uai_principal_id
+resource "azurerm_network_interface" "nic" {
+  name                = "${var.prefix}-nic"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.subnet.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.public_ip.id
+  }
 }
 
-resource "azurerm_role_assignment" "log_analytics" {
-  scope                = azurerm_resource_group.main.id
-  role_definition_name = "Log Analytics Contributor"
-  principal_id         = module.vmss.uai_principal_id
+resource "azurerm_network_interface_security_group_association" "nsg_assoc" {
+  network_interface_id      = azurerm_network_interface.nic.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
+resource "azurerm_linux_virtual_machine" "vm" {
+  name                            = "${var.prefix}-vm"
+  location                        = azurerm_resource_group.rg.location
+  resource_group_name             = azurerm_resource_group.rg.name
+  size                            = "Standard_B1s"
+  admin_username                  = "azureuser"
+  network_interface_ids           = [azurerm_network_interface.nic.id]
+  disable_password_authentication = true
 
+  admin_ssh_key {
+    username   = "azureuser"
+    public_key = file("~/.ssh/id_rsa.pub")
+  }
 
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-focal"
+    sku       = "20_04-lts"
+    version   = "latest"
+  }
+
+  custom_data = base64encode(<<-EOF
+    #!/bin/bash
+    apt-get update
+    apt-get install -y nginx
+    hostname > /var/www/html/index.html
+  EOF
+  )
+}
