@@ -22,7 +22,8 @@ override.tf.json
 .terraform.tfvars
 terraform.tfvars
 somefile.tfplan
-
+backend.tfvars
+backend.config
 # Ignore any local environment files
 .env
 .env.*
