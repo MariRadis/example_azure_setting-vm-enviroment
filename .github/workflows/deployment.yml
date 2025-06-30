@@ -29,12 +29,7 @@ jobs:
       - name: Show current Azure account
         run: az account show
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      # todo add terraform validate
-
-      - name: Terraform Init,plan,apply
+      - name: Terraform Init
         run: |
           cd project
           terraform init \
@@ -42,5 +37,16 @@ jobs:
             -backend-config="storage_account_name=${{ secrets.TF_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ secrets.TF_CONTAINER_NAME }}" \
             -backend-config="key=${{ secrets.TF_KEY }}"
+
+      - name: Terraform Validate
+        run: cd project && terraform validate
+
+      - name: Terraform Plan and Apply
+        env:
+          TF_VAR_admin_username: ${{ secrets.TF_VAR_ADMIN_USERNAME }}
+          TF_VAR_ssh_public_key: ${{ secrets.TF_VAR_SSH_PUBLIC_KEY }}
+          TF_VAR_location: "westeurope"
+        run: |
+          cd project
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan
