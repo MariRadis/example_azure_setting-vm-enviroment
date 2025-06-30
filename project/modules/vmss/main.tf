@@ -11,13 +11,13 @@
 #Outputs for VMSS ID and name
 
 
-resource "azurerm_user_assigned_identity" "this" {
+resource "azurerm_user_assigned_identity" "uai_vmss" {
   name                = var.identity_name
   location            = var.location
   resource_group_name = var.resource_group_name
 }
 
-resource "azurerm_role_assignment" "this" {
+resource "azurerm_role_assignment" "uai_vss_roles" {
   for_each = {
     for idx, role in var.role_assignments :
     idx => role
@@ -25,9 +25,10 @@ resource "azurerm_role_assignment" "this" {
 
   scope                = each.value.scope
   role_definition_name = each.value.role_definition_name
-  principal_id         = azurerm_user_assigned_identity.this.principal_id
+  principal_id         = azurerm_user_assigned_identity.uai_vmss.principal_id
 }
 
+# vm scale set
 resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   name                = var.vmss_name
   resource_group_name = var.resource_group_name
@@ -65,7 +66,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.this.id]
+    identity_ids = [azurerm_user_assigned_identity.uai_vmss.id]
   }
 
   tags = {
