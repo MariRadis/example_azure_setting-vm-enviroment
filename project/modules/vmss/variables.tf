@@ -39,3 +39,8 @@ variable "lb_backend_address_pool_id" {
   type        = string
   description = "ID of the Load Balancer backend address pool"
 }
+
+variable "ssh_public_key" {
+  description = "SSH public key for the VMSS admin user"
+  type        = string
+}

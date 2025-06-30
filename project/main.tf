@@ -22,6 +22,7 @@ module "vmss" {
   lb_backend_address_pool_id = module.load_balancer.backend_address_pool_id
   admin_username      = var.admin_username
   identity_name       = "webapp-vmss"
+  ssh_public_key = var.ssh_public_key
   custom_data         = <<-EOT
 #!/bin/bash
 apt-get update
