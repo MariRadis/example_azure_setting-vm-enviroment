@@ -1,17 +1,21 @@
 terraform {
-  required_version = ">= 1.5.0"
-
   required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "6.28.0"
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">= 3.95.0"
+    }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = ">= 2.50.0"
     }
   }
+
+  required_version = "> 1.9.0"
 }
 
-provider "google" {
-  project                     = data.terraform_remote_state.bootstrap.outputs.project_id
-  region                      = var.region
-  zone                        = var.zone
-  # impersonate_service_account = data.terraform_remote_state.bootstrap.outputs.terraform_sa_email todo did not have time
+provider "azurerm" {
+  features {}
+}
+provider "azuread" {
+  use_cli = true
 }
