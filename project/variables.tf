@@ -1,22 +1,20 @@
 variable "prefix" {
-  description = "Resource name prefix"
   type        = string
+  description = "Prefix for all resource names"
 }
 
 variable "location" {
-  description = "Azure region for resources"
   type        = string
-  default     = "West Europe"
 }
 
 variable "address_space" {
-  description = "VNet address space"
   type        = list(string)
-  default     = ["10.0.0.0/16"]
 }
 
 variable "subnet_prefix" {
-  description = "Subnet address prefixes"
   type        = list(string)
-  default     = ["10.0.1.0/24"]
+}
+
+variable "vm_instance_count" {
+  type        = number
 }
