@@ -102,8 +102,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
 
   source_image_reference {
     publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-focal"
-    sku       = "20_04-lts"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts-gen2"
     version   = "latest"
   }
 
@@ -125,30 +125,28 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   }
 
   custom_data = base64encode(<<-EOF
-  #!/bin/bash
+#!/bin/bash
 
   # Redirect all output to log file and syslog
   exec > >(tee /var/log/startup.log | logger -t user-data -s 2>/dev/console) 2>&1
 
   echo "[INFO] Updating packages and installing NGINX"
-  apt-get update
-  apt-get install -y nginx
+  sudo apt-get update
+  sudo apt-get install -y nginx
 
   echo "[INFO] Setting homepage to hostname"
-  hostname > /var/www/html/index.html
+  echo $(hostname) | sudo tee /var/www/html/index.html > /dev/null
+
+  sudo systemctl enable nginx
 
   echo "[INFO] Configuring NGINX to log to syslog (facility 'user')"
-  cat << 'EOT' > /etc/nginx/conf.d/syslog.conf
-error_log syslog:server=unix:/dev/log,user;
-access_log syslog:server=unix:/dev/log,user combined;
+  sudo tee /etc/nginx/conf.d/logging.conf > /dev/null <<'EOT'
+access_log /var/log/nginx/access.log;
+error_log /var/log/nginx/error.log;
 EOT
 
   echo "[INFO] Restarting NGINX to apply logging configuration"
-  systemctl restart nginx
-
-  echo "[INFO] Installing Azure Monitor Agent (AMA)"
-  wget -q https://aka.ms/InstallAzureMonitorAgentLinux -O InstallAzureMonitorAgentLinux.sh
-  bash InstallAzureMonitorAgentLinux.sh
+  sudo systemctl restart nginx
 
   echo "[INFO] Startup script completed successfully"
 EOF
@@ -303,6 +301,7 @@ resource "azurerm_monitor_data_collection_rule" "nginx_dcr" {
     destinations = ["law-destination"]
   }
 }
+
 
 
 resource "azurerm_monitor_data_collection_rule_association" "vmss_dcr_assoc" {
