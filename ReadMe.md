@@ -4,7 +4,7 @@ This Terraform module provisions an Azure Virtual Machine Scale Set (VMSS) behin
 
 ---
 
-## ✅ Features
+##  Features
 
 - VNet and subnet with Network Security Group (NSG) allowing HTTP traffic
 - Load Balancer with public IP, backend pool, health probe, and LB rule
@@ -15,7 +15,54 @@ This Terraform module provisions an Azure Virtual Machine Scale Set (VMSS) behin
 
 ---
 
-## 🚀 Deployment
+
+## Modules
+
+### 1. `network`
+Responsible for creating the network infrastructure:
+- Virtual Network (VNet)
+- Subnet
+- Network Security Group (NSG) with HTTP ingress rule
+- Public IP for Load Balancer
+- Load Balancer (Standard SKU)
+    - Backend Address Pool
+    - Health Probe
+    - Load Balancing Rule
+
+**Outputs:**
+- `subnet_id`
+- `lb_backend_pool_id`
+
+---
+
+### 2. `compute`
+Handles the compute resources:
+- Virtual Machine Scale Set (VMSS)
+    - Ubuntu image with custom NGINX startup script
+    - SSH public key for authentication
+    - NIC integration with backend pool
+- Auto Scaling based on CPU usage
+
+**Outputs:**
+- `vmss_id`
+
+---
+
+### 3. `monitoring`
+Sets up monitoring and observability:
+- Log Analytics Workspace
+- Azure Monitor diagnostics for VMSS
+- Azure Monitor Agent (AMA) extension
+- Data Collection Rule (DCR) for syslog (NGINX logs)
+- DCR Association with VMSS
+
+**Outputs:**
+- `log_analytics_workspace_id`
+
+---
+
+
+##  Deployment
 
 ```hcl
 module "azure_vmss_nginx" {
@@ -31,9 +78,9 @@ module "azure_vmss_nginx" {
 
 ---
 
-## 🧪 Testing and Validation
+##  Testing and Validation
 
-### 1. 🔗 Access NGINX via Load Balancer
+### 1.  Access NGINX via Load Balancer
 
 ```bash
 curl http://<lb_public_ip>
@@ -44,7 +91,7 @@ curl http://<lb_public_ip>
 
 ---
 
-### 2. 🔐 SSH into VM
+### 2.  SSH into VM
 
 > VMSS instances typically do **not** have public IPs for direct access. Use one of the following methods:
 
@@ -57,7 +104,7 @@ curl http://<lb_public_ip>
 
 ---
 
-### 3. 📈 Test Autoscaling
+### 3.  Test Autoscaling
 
 #### Scale-Out: Trigger CPU Load
 
@@ -76,7 +123,7 @@ stress --cpu 2 --timeout 300  # Run CPU stress for 5 mins
 
 ---
 
-### 4. 📊 Validate Monitoring & Logs
+### 4.  Validate Monitoring & Logs
 
 #### Log Analytics
 
@@ -101,17 +148,18 @@ You should see:
 
 ---
 
-## 📥 Output
+##  Output
 
 ```hcl
-output "lb_public_ip" {
-  value = azurerm_public_ip.lb_public_ip.ip_address
+output "web_vm_public_ip" {
+  value = module.network.web_vm_public_ip
 }
+
 ```
 
 ---
 
-## 🧾 Inputs
+##  Inputs
 
 | Name              | Description                                | Type            | Required |
 |-------------------|--------------------------------------------|------------------|----------|
@@ -123,6 +171,6 @@ output "lb_public_ip" {
 
 ---
 
-## 📄 License
+##  License
 
 MIT
