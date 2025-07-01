@@ -213,12 +213,6 @@ resource "azurerm_monitor_autoscale_setting" "vmss_autoscale" {
     }
   }
 
-  notification {
-    email {
-      send_to_subscription_administrator    = true
-      send_to_subscription_co_administrator = false
-    }
-  }
 
   enabled = true
   tags    = {}
@@ -237,6 +231,7 @@ resource "azurerm_log_analytics_workspace" "log" {
 data "azurerm_monitor_diagnostic_categories" "vmss" {
   resource_id = azurerm_linux_virtual_machine_scale_set.vmss.id
 }
+
 
 resource "azurerm_monitor_diagnostic_setting" "vmss_diag" {
   name                       = "${var.prefix}-vmss-diag"
@@ -288,7 +283,7 @@ resource "azurerm_monitor_data_collection_rule" "nginx_dcr" {
     syslog {
       name           = "nginx-syslog"
       facility_names = ["user"]
-      log_levels     = ["*"] # all
+      log_levels = ["Debug", "Info", "Warning", "Error"]
       streams        = ["Microsoft-Syslog"]
     }
 
