@@ -288,7 +288,7 @@ resource "azurerm_monitor_data_collection_rule" "nginx_dcr" {
     syslog {
       name           = "nginx-syslog"
       facility_names = ["user"]
-      log_levels     = ["All"]
+      log_levels     = ["*"] # all
       streams        = ["Microsoft-Syslog"]
     }
 
