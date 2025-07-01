@@ -29,92 +29,107 @@ module "azure_vmss_nginx" {
 }
 ```
 
-🧪 Testing and Validation
-1. 🔗 Access NGINX via Load Balancer
-bash
-Copy
-Edit
+---
+
+## 🧪 Testing and Validation
+
+### 1. 🔗 Access NGINX via Load Balancer
+
+```bash
 curl http://<lb_public_ip>
-Replace <lb_public_ip> with the Terraform output lb_public_ip.
+```
 
-You should see a response showing the hostname of one of the VMs.
+- Replace `<lb_public_ip>` with the Terraform output `lb_public_ip`.
+- You should see a response showing the hostname of one of the VMs.
 
-2. 🔐 SSH into VM
-VMSS instances typically do not have public IPs for direct access. Use one of the following methods:
+---
 
-Option A: Use Azure Bastion (Recommended)
-Go to Azure Portal → VMSS → Instances
+### 2. 🔐 SSH into VM
 
-Select an instance → Click Connect → Choose Bastion
+> VMSS instances typically do **not** have public IPs for direct access. Use one of the following methods:
 
-Use your SSH private key (~/.ssh/id_rsa) and user azureuser
+#### Option A: Use Azure Bastion (Recommended)
 
-Option B: Use a Jumpbox
+1. Go to Azure Portal → VMSS → Instances
+2. Select an instance → Click **Connect** → Choose **Bastion**
+3. Use your SSH private key (`~/.ssh/id_rsa`) and user `azureuser`
+
+#### Option B: Use a Jumpbox
+
 Provision a small VM in the same subnet with a public IP and SSH into a VMSS instance from there:
 
-bash
-Copy
-Edit
+```bash
 ssh -i ~/.ssh/id_rsa azureuser@<vm_private_ip>
-3. 📈 Test Autoscaling
-Scale-Out: Trigger CPU Load
-bash
-Copy
-Edit
+```
+
+---
+
+### 3. 📈 Test Autoscaling
+
+#### Scale-Out: Trigger CPU Load
+
+```bash
 sudo apt-get install -y stress
 stress --cpu 2 --timeout 300  # Run CPU stress for 5 mins
-This will raise the CPU above the 70% threshold
+```
 
-Watch autoscale in the Azure Portal → VMSS → Instances
+- This will raise the CPU above the 70% threshold
+- Watch autoscale in the Azure Portal → VMSS → Instances
 
-Scale-In: Let Load Drop
-Once the stress test finishes, the average CPU drops
+#### Scale-In: Let Load Drop
 
-VMSS will scale in after ~5 minutes if CPU stays below 30%
+- Once the stress test finishes, the average CPU drops
+- VMSS will scale in after ~5 minutes if CPU stays below 30%
 
-4. 📊 Validate Monitoring & Logs
-Log Analytics
-Go to Log Analytics Workspace
+---
 
-Run this Kusto query:
+### 4. 📊 Validate Monitoring & Logs
 
-kusto
-Copy
-Edit
+#### Log Analytics
+
+1. Go to **Log Analytics Workspace**
+2. Run this Kusto query:
+
+```kusto
 Syslog
 | where Facility == "user"
 | sort by TimeGenerated desc
+```
+
 You should see:
+- NGINX access and error logs
+- Startup script logs tagged with `user-data`
 
-NGINX access and error logs
+#### Metrics Dashboard
 
-Startup script logs tagged with user-data
+1. Navigate to **VMSS → Monitoring → Metrics**
+2. Set namespace to `Microsoft.Compute/virtualMachineScaleSets`
+3. View **Percentage CPU** to verify scaling behavior
 
-Metrics Dashboard
-Navigate to VMSS → Monitoring → Metrics
+---
 
-Set namespace to Microsoft.Compute/virtualMachineScaleSets
+## 📥 Output
 
-View Percentage CPU to verify scaling behavior
-
-📥 Output
-hcl
-Copy
-Edit
+```hcl
 output "lb_public_ip" {
   value = azurerm_public_ip.lb_public_ip.ip_address
 }
-🧾 Inputs
-Name	Description	Type	Required
-prefix	Prefix for naming Azure resources	string	✅
-location	Azure region	string	✅
-address_space	VNet address space	list(string)	✅
-subnet_prefix	Subnet CIDR range	list(string)	✅
-vm_instance_count	Initial number of VM instances	number	✅
+```
 
-📄 License
+---
+
+## 🧾 Inputs
+
+| Name              | Description                                | Type            | Required |
+|-------------------|--------------------------------------------|------------------|----------|
+| `prefix`          | Prefix for naming Azure resources           | `string`         | ✅       |
+| `location`        | Azure region                               | `string`         | ✅       |
+| `address_space`   | VNet address space                         | `list(string)`   | ✅       |
+| `subnet_prefix`   | Subnet CIDR range                          | `list(string)`   | ✅       |
+| `vm_instance_count` | Initial number of VM instances           | `number`         | ✅       |
+
+---
+
+## 📄 License
+
 MIT
-
-vbnet
-Copy
-Edit
