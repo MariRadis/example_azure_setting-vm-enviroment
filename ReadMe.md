@@ -1,176 +1,120 @@
-# Azure NGINX Web App with Load Balancer (Terraform)
+# Azure VM Scale Set with Load Balancer, NSG, and Monitoring
 
-This project deploys a simple NGINX-based web application on a **Virtual Machine Scale Set (VMSS)** behind a **Standard Azure Load Balancer**, using **Terraform** for full automation and reproducibility.
-
----
-
-## Features
-
-* Linux VMSS running NGINX via startup script (`custom_data`)
-* Standard Load Balancer with:
-
-   * Public IP
-   * Backend Address Pool
-   * Health Probe on port 80
-   * Load Balancer Rule for HTTP traffic
-   * Optional NAT rules for SSH
-* Secure, private VMs (no public IPs)
-* NAT-enabled outbound internet access
-* Modular and reusable Terraform code
+This Terraform module provisions an Azure Virtual Machine Scale Set (VMSS) behind a Standard Load Balancer with HTTP health probes, autoscaling based on CPU usage, NGINX installation with a custom homepage, and full Azure Monitor integration for diagnostics and logging.
 
 ---
 
-## Prerequisites
+## ✅ Features
 
-* An active Azure subscription
-* [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed and logged in:
-
-  ```bash
-  az login
-  az account set --subscription "Your Subscription Name or ID"
-  ```
-* [Terraform](https://developer.hashicorp.com/terraform/downloads) v1.9 or newer
-* Terraform backend configured (e.g., via `backend.config`)
+- VNet and subnet with Network Security Group (NSG) allowing HTTP traffic
+- Load Balancer with public IP, backend pool, health probe, and LB rule
+- VM Scale Set with custom startup script to install and configure NGINX
+- Autoscaling based on CPU utilization thresholds
+- Azure Monitor Agent with syslog-based NGINX logging to Log Analytics
+- Diagnostics collection for system and application insights
 
 ---
 
-## Project Structure
+## 🚀 Deployment
 
-```text
-.
-├── apply.sh                     # Deploys infrastructure
-├── destroy.sh                   # Destroys infrastructure
-├── backend.config               # Remote state backend config
-├── main.tf / variables.tf / outputs.tf
-├── modules/
-│   ├── vpc/                     # VNet, subnet, NAT, firewall rules
-│   ├── compute/                 # VMSS, startup script, identity
-│   └── load_balancer/          # Load Balancer, probe, rules, public IP
+```hcl
+module "azure_vmss_nginx" {
+  source = "./path-to-this-module"
+
+  prefix            = "myapp"
+  location          = "West Europe"
+  address_space     = ["10.0.0.0/16"]
+  subnet_prefix     = ["10.0.1.0/24"]
+  vm_instance_count = 2
+}
 ```
 
----
+🧪 Testing and Validation
+1. 🔗 Access NGINX via Load Balancer
+bash
+Copy
+Edit
+curl http://<lb_public_ip>
+Replace <lb_public_ip> with the Terraform output lb_public_ip.
 
-## Deployment
+You should see a response showing the hostname of one of the VMs.
 
-### 1. Initialize Terraform
+2. 🔐 SSH into VM
+VMSS instances typically do not have public IPs for direct access. Use one of the following methods:
 
-```bash
-terraform init -backend-config="backend.config"
-```
+Option A: Use Azure Bastion (Recommended)
+Go to Azure Portal → VMSS → Instances
 
-### 2. Deploy Infrastructure
+Select an instance → Click Connect → Choose Bastion
 
-```bash
-./apply.sh
-```
+Use your SSH private key (~/.ssh/id_rsa) and user azureuser
 
-This provisions:
+Option B: Use a Jumpbox
+Provision a small VM in the same subnet with a public IP and SSH into a VMSS instance from there:
 
-* A virtual network and subnet
-* A Linux VMSS with NGINX
-* A Standard Load Balancer
-* Optional NAT rules for SSH access
+bash
+Copy
+Edit
+ssh -i ~/.ssh/id_rsa azureuser@<vm_private_ip>
+3. 📈 Test Autoscaling
+Scale-Out: Trigger CPU Load
+bash
+Copy
+Edit
+sudo apt-get install -y stress
+stress --cpu 2 --timeout 300  # Run CPU stress for 5 mins
+This will raise the CPU above the 70% threshold
 
----
+Watch autoscale in the Azure Portal → VMSS → Instances
 
-## Access the Web App
+Scale-In: Let Load Drop
+Once the stress test finishes, the average CPU drops
 
-After deployment, get the public IP:
+VMSS will scale in after ~5 minutes if CPU stays below 30%
 
-```bash
-terraform output -raw public_ip
-```
+4. 📊 Validate Monitoring & Logs
+Log Analytics
+Go to Log Analytics Workspace
 
-Open it in your browser — you should see:
+Run this Kusto query:
 
-```
-Hello from <instance-hostname>
-```
+kusto
+Copy
+Edit
+Syslog
+| where Facility == "user"
+| sort by TimeGenerated desc
+You should see:
 
-This verifies:
+NGINX access and error logs
 
-* Load balancer routing works
-* Health probe sees VM as healthy
-* NGINX is running on the VMSS
+Startup script logs tagged with user-data
 
----
+Metrics Dashboard
+Navigate to VMSS → Monitoring → Metrics
 
-## SSH Access (via NAT rule)
+Set namespace to Microsoft.Compute/virtualMachineScaleSets
 
-> VMSS instances do not have public IPs. SSH is enabled through a NAT rule on the Load Balancer.
+View Percentage CPU to verify scaling behavior
 
-1. Get the load balancer IP and NAT frontend port:
+📥 Output
+hcl
+Copy
+Edit
+output "lb_public_ip" {
+  value = azurerm_public_ip.lb_public_ip.ip_address
+}
+🧾 Inputs
+Name	Description	Type	Required
+prefix	Prefix for naming Azure resources	string	✅
+location	Azure region	string	✅
+address_space	VNet address space	list(string)	✅
+subnet_prefix	Subnet CIDR range	list(string)	✅
+vm_instance_count	Initial number of VM instances	number	✅
 
-   ```bash
-   terraform output -raw public_ip     # Public IP
-   ```
+📄 License
+MIT
 
-2. Connect:
-
-   ```bash
-   ssh azureuser@<public-ip> -p 5000
-   
-   ssh azureuser@52.166.57.138 -p 5000 
-   ```
-
-3. Inside the VM:
-
-   ```bash
-   curl localhost
-   sudo systemctl status nginx
-   ping google.com   # Test NAT access
-   ```
-
----
-
-## Manual Testing
-
-### Port reachability:
-
-```bash
-nc -zv <public-ip> 22   # SSH
-nc -zv <public-ip> 80   # HTTP
-nc -zv <public-ip> 443  # HTTPS (if applicable)
-```
-
-## Simulate Failures (Auto-heal)
-
-Kill the VM instance in Azure Portal or CLI and watch it self-heal:
-
-```bash
-az vmss list-instances --resource-group <rg> --name <vmss-name>
-az vmss delete-instances --resource-group <rg> --name <vmss-name> --instance-ids <id>
-```
-
-Then access the web app again — a new instance should be recreated and available behind the load balancer.
-
----
-
-## Tear Down
-
-```bash
-./destroy.sh
-```
-
----
-
-## Security
-
-* No public IPs on VM instances
-* SSH access controlled via NAT rules on specific frontend ports
-* Inbound rules limited to HTTP (80) and SSH (22)
-* NAT gateway (optional) enables outbound internet securely
-
----
-
-## Notes
-
-* NGINX is installed using `custom_data` at VMSS boot time
-* Backend address pool is connected via `load_balancer_backend_address_pool_ids` in the VMSS
-* All resources are created via separate modules and can be reused across environments
-
----
-
-##License
-
-MIT License
+vbnet
+Copy
+Edit
