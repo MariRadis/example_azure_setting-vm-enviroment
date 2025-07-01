@@ -247,7 +247,6 @@ resource "azurerm_monitor_diagnostic_setting" "vmss_diag" {
     for_each = toset(data.azurerm_monitor_diagnostic_categories.vmss.metrics)
     content {
       category = enabled_metric.value
-      enabled  = true
     }
   }
 
@@ -255,7 +254,6 @@ resource "azurerm_monitor_diagnostic_setting" "vmss_diag" {
     for_each = data.azurerm_monitor_diagnostic_categories.vmss.log_category_types
     content {
       category = enabled_log.value
-      enabled  = true
     }
   }
 }
