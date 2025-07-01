@@ -238,9 +238,13 @@ data "azurerm_monitor_diagnostic_categories" "vmss" {
   resource_id = azurerm_linux_virtual_machine_scale_set.vmss.id
 }
 
+data "azurerm_monitor_diagnostic_categories" "vmss" {
+  resource_id = azurerm_linux_virtual_machine_scale_set.vmss.id
+}
+
 resource "azurerm_monitor_diagnostic_setting" "vmss_diag" {
   name                       = "${var.prefix}-vmss-diag"
-  target_resource_id         =  azurerm_linux_virtual_machine_scale_set.vmss.id
+  target_resource_id         = azurerm_linux_virtual_machine_scale_set.vmss.id
   log_analytics_workspace_id = azurerm_log_analytics_workspace.log.id
 
   dynamic "enabled_metric" {
@@ -252,7 +256,7 @@ resource "azurerm_monitor_diagnostic_setting" "vmss_diag" {
   }
 
   dynamic "enabled_log" {
-    for_each = toset(data.azurerm_monitor_diagnostic_categories.vmss.)
+    for_each = data.azurerm_monitor_diagnostic_categories.vmss.log_category_types
     content {
       category = enabled_log.value
       enabled  = true
