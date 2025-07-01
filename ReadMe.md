@@ -36,7 +36,7 @@ module "azure_vmss_nginx" {
 ### 1. 🔗 Access NGINX via Load Balancer
 
 ```bash
-curl http://<lb_public_ip>
+curl http://51.136.29.217
 ```
 
 - Replace `<lb_public_ip>` with the Terraform output `lb_public_ip`.
@@ -48,7 +48,7 @@ curl http://<lb_public_ip>
 
 > VMSS instances typically do **not** have public IPs for direct access. Use one of the following methods:
 
-#### Option A: Use Azure Bastion 
+#### Use Azure Bastion 
 
 1. Go to Azure Portal → VMSS → Instances
 2. Select an instance → Click **Connect** → Choose **Bastion**

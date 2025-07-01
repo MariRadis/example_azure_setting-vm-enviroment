@@ -18,4 +18,5 @@ variable "subnet_prefix" {
 variable "vm_instance_count" {
   type        = number
 }
-ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."
+variable "ssh_public_key" {
+}
