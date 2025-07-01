@@ -48,19 +48,12 @@ curl http://<lb_public_ip>
 
 > VMSS instances typically do **not** have public IPs for direct access. Use one of the following methods:
 
-#### Option A: Use Azure Bastion (Recommended)
+#### Option A: Use Azure Bastion 
 
 1. Go to Azure Portal → VMSS → Instances
 2. Select an instance → Click **Connect** → Choose **Bastion**
 3. Use your SSH private key (`~/.ssh/id_rsa`) and user `azureuser`
 
-#### Option B: Use a Jumpbox
-
-Provision a small VM in the same subnet with a public IP and SSH into a VMSS instance from there:
-
-```bash
-ssh -i ~/.ssh/id_rsa azureuser@<vm_private_ip>
-```
 
 ---
 
