@@ -36,7 +36,7 @@ module "azure_vmss_nginx" {
 ### 1. 🔗 Access NGINX via Load Balancer
 
 ```bash
-curl http://51.136.29.217
+curl http://<lb_public_ip>
 ```
 
 - Replace `<lb_public_ip>` with the Terraform output `lb_public_ip`.
