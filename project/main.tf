@@ -238,10 +238,6 @@ data "azurerm_monitor_diagnostic_categories" "vmss" {
   resource_id = azurerm_linux_virtual_machine_scale_set.vmss.id
 }
 
-data "azurerm_monitor_diagnostic_categories" "vmss" {
-  resource_id = azurerm_linux_virtual_machine_scale_set.vmss.id
-}
-
 resource "azurerm_monitor_diagnostic_setting" "vmss_diag" {
   name                       = "${var.prefix}-vmss-diag"
   target_resource_id         = azurerm_linux_virtual_machine_scale_set.vmss.id
