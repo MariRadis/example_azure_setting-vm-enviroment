@@ -127,21 +127,30 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   custom_data = base64encode(<<-EOF
   #!/bin/bash
 
-  # Create a log file for startup script
+  # Redirect all output to log file and syslog
   exec > >(tee /var/log/startup.log | logger -t user-data -s 2>/dev/console) 2>&1
 
-  echo "Updating packages and installing NGINX"
+  echo "[INFO] Updating packages and installing NGINX"
   apt-get update
   apt-get install -y nginx
 
-  echo "Setting homepage to hostname"
+  echo "[INFO] Setting homepage to hostname"
   hostname > /var/www/html/index.html
 
-  echo "Installing Azure Monitor Agent (AMA)"
+  echo "[INFO] Configuring NGINX to log to syslog (facility 'user')"
+  cat << 'EOT' > /etc/nginx/conf.d/syslog.conf
+error_log syslog:server=unix:/dev/log,user;
+access_log syslog:server=unix:/dev/log,user combined;
+EOT
+
+  echo "[INFO] Restarting NGINX to apply logging configuration"
+  systemctl restart nginx
+
+  echo "[INFO] Installing Azure Monitor Agent (AMA)"
   wget -q https://aka.ms/InstallAzureMonitorAgentLinux -O InstallAzureMonitorAgentLinux.sh
   bash InstallAzureMonitorAgentLinux.sh
 
-  echo "Startup script completed successfully."
+  echo "[INFO] Startup script completed successfully"
 EOF
   )
 }
@@ -287,30 +296,10 @@ resource "azurerm_monitor_data_collection_rule" "nginx_dcr" {
       streams        = ["Microsoft-Syslog"]
     }
 
-    log_file {
-      name          = "nginx-access"
-      streams       = ["Microsoft-CustomLogs"]
-      file_patterns = ["/var/log/nginx/access.log"]
-      format        = "text"
-    }
-
-    log_file {
-      name          = "nginx-error"
-      streams       = ["Microsoft-CustomLogs"]
-      file_patterns = ["/var/log/nginx/error.log"]
-      format        = "text"
-    }
-
-    log_file {
-      name          = "startup-log"
-      streams       = ["Microsoft-CustomLogs"]
-      file_patterns = ["/var/log/startup.log"]
-      format        = "text"
-    }
   }
 
   data_flow {
-    streams      = ["Microsoft-Syslog", "Microsoft-CustomLogs"]
+    streams      = ["Microsoft-Syslog"]
     destinations = ["law-destination"]
   }
 }
