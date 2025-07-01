@@ -281,31 +281,31 @@ resource "azurerm_monitor_data_collection_rule" "nginx_dcr" {
 
   data_sources {
     syslog {
-      name           = "nginx-syslog"
+      name           = "syslog-nginx"
       facility_names = ["user"]
-      log_levels = ["Debug", "Info", "Warning", "Error"]
+      log_levels     = ["Debug", "Info", "Warning", "Error"]
       streams        = ["Microsoft-Syslog"]
     }
 
     log_file {
       name          = "nginx-access"
+      streams       = ["Microsoft-CustomLogs"]
       file_patterns = ["/var/log/nginx/access.log"]
       format        = "text"
-      streams       = ["Microsoft-CustomLogs"]
     }
 
     log_file {
       name          = "nginx-error"
+      streams       = ["Microsoft-CustomLogs"]
       file_patterns = ["/var/log/nginx/error.log"]
       format        = "text"
-      streams       = ["Microsoft-CustomLogs"]
     }
 
     log_file {
       name          = "startup-log"
+      streams       = ["Microsoft-CustomLogs"]
       file_patterns = ["/var/log/startup.log"]
       format        = "text"
-      streams       = ["Microsoft-CustomLogs"]
     }
   }
 
