@@ -1,80 +1,20 @@
+
 resource "azurerm_log_analytics_workspace" "log" {
   name                = "${var.prefix}-law"
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
   sku                 = "PerGB2018"
   retention_in_days   = 30
-}
-
-resource "azurerm_monitor_autoscale_setting" "autoscale" {
-  name                = "${var.prefix}-autoscale"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
-  target_resource_id  = var.vmss_id
-
-  profile {
-    name = "cpu-scaling"
-
-    capacity {
-      minimum = "1"
-      maximum = "5"
-      default = tostring(var.instance_count)
-    }
-
-    rule {
-      metric_trigger {
-        metric_name        = "Percentage CPU"
-        metric_namespace   = "Microsoft.Compute/virtualMachineScaleSets"
-        metric_resource_id = var.vmss_id
-        time_grain         = "PT1M"
-        statistic          = "Average"
-        time_window        = "PT5M"
-        time_aggregation   = "Average"
-        operator           = "GreaterThan"
-        threshold          = 70
-      }
-
-      scale_action {
-        direction = "Increase"
-        type      = "ChangeCount"
-        value     = "1"
-        cooldown  = "PT5M"
-      }
-    }
-
-    rule {
-      metric_trigger {
-        metric_name        = "Percentage CPU"
-        metric_namespace   = "Microsoft.Compute/virtualMachineScaleSets"
-        metric_resource_id = var.vmss_id
-        time_grain         = "PT1M"
-        statistic          = "Average"
-        time_window        = "PT5M"
-        time_aggregation   = "Average"
-        operator           = "LessThan"
-        threshold          = 30
-      }
-
-      scale_action {
-        direction = "Decrease"
-        type      = "ChangeCount"
-        value     = "1"
-        cooldown  = "PT5M"
-      }
-    }
-  }
-
-  enabled = true
 }
 
 data "azurerm_monitor_diagnostic_categories" "vmss" {
   resource_id = var.vmss_id
 }
 
-resource "azurerm_monitor_diagnostic_setting" "diag" {
-  name                       = "${var.prefix}-diag"
+resource "azurerm_monitor_diagnostic_setting" "vmss_diag" {
+  name                       = "${var.prefix}-vmss-diag"
   target_resource_id         = var.vmss_id
-  log_analytics_workspace_id = var.log_analytics_workspace_id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.log.id
 
   dynamic "enabled_metric" {
     for_each = toset(data.azurerm_monitor_diagnostic_categories.vmss.metrics)
@@ -101,12 +41,37 @@ resource "azurerm_virtual_machine_scale_set_extension" "ama" {
   settings                     = "{}"
 }
 
-resource "azurerm_monitor_data_collection_rule" "dcr" {
+resource "azurerm_monitor_data_collection_rule" "nginx_dcr" {
   name                = "${var.prefix}-dcr"
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
   kind                = "Linux"
 
   destinations {
     log_analytics {
-      name                  = "law-de
+      name                  = "law-destination"
+      workspace_resource_id = azurerm_log_analytics_workspace.log.id
+    }
+  }
+
+  data_sources {
+    syslog {
+      name           = "syslog-nginx"
+      facility_names = ["user"]
+      log_levels     = ["Debug", "Info", "Warning", "Error"]
+      streams        = ["Microsoft-Syslog"]
+    }
+  }
+
+  data_flow {
+    streams      = ["Microsoft-Syslog"]
+    destinations = ["law-destination"]
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "vmss_dcr_assoc" {
+  name                    = "${var.prefix}-dcr-assoc"
+  target_resource_id      = var.vmss_id
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.nginx_dcr.id
+  description             = "Associates DCR with VMSS to collect NGINX and startup logs"
+}

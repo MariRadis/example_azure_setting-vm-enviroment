@@ -1,18 +1,14 @@
-resource "azurerm_resource_group" "rg" {
-  name     = "${var.prefix}-rg"
-  location = var.location
-}
 
 resource "azurerm_virtual_network" "vnet" {
   name                = "${var.prefix}-vnet"
   address_space       = var.address_space
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
 }
 
 resource "azurerm_subnet" "subnet" {
   name                 = "${var.prefix}-subnet"
-  resource_group_name  = azurerm_resource_group.rg.name
+  resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = var.subnet_prefix
 }
@@ -20,7 +16,7 @@ resource "azurerm_subnet" "subnet" {
 resource "azurerm_network_security_group" "nsg" {
   name                = "${var.prefix}-nsg"
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
 
   security_rule {
     name                       = "allow_http"
@@ -35,7 +31,7 @@ resource "azurerm_network_security_group" "nsg" {
   }
 }
 
-resource "azurerm_subnet_network_security_group_association" "assoc" {
+resource "azurerm_subnet_network_security_group_association" "subnet_nsg" {
   subnet_id                 = azurerm_subnet.subnet.id
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
@@ -43,7 +39,7 @@ resource "azurerm_subnet_network_security_group_association" "assoc" {
 resource "azurerm_public_ip" "lb_public_ip" {
   name                = "${var.prefix}-lb-pip"
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
   allocation_method   = "Static"
   sku                 = "Standard"
 }
@@ -51,7 +47,7 @@ resource "azurerm_public_ip" "lb_public_ip" {
 resource "azurerm_lb" "lb" {
   name                = "${var.prefix}-lb"
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
   sku                 = "Standard"
 
   frontend_ip_configuration {
